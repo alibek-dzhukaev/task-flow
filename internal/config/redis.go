@@ -1,0 +1,20 @@
+package config
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/redis/go-redis/v9"
+)
+
+func InitRedis(cfg *Config) (*redis.Client, error) {
+	client := redis.NewClient(&redis.Options{
+		Addr: cfg.RedisAddr(),
+	})
+
+	if err := client.Ping(context.Background()).Err(); err != nil {
+		return nil, fmt.Errorf("failed to ping redis: %w", err)
+	}
+
+	return client, nil
+}

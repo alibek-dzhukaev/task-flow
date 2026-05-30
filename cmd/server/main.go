@@ -10,6 +10,11 @@ import (
 	"time"
 
 	"github.com/alibek-dzhukaev/task-flow/internal/config"
+	"github.com/alibek-dzhukaev/task-flow/internal/handler"
+	"github.com/alibek-dzhukaev/task-flow/internal/model"
+	"github.com/alibek-dzhukaev/task-flow/internal/repository"
+	"github.com/alibek-dzhukaev/task-flow/internal/router"
+	"github.com/alibek-dzhukaev/task-flow/internal/service"
 )
 
 func main() {
@@ -23,17 +28,34 @@ func main() {
 		log.Fatalf("database error: %v", err)
 	}
 
-	redis, err := config.InitRedis(cfg)
+	redisClient, err := config.InitRedis(cfg)
 	if err != nil {
 		log.Fatalf("redis error: %v", err)
 	}
 
-	_ = db
-	_ = redis
+	_ = redisClient
+
+	if err := db.AutoMigrate(
+		&model.User{},
+		&model.Project{},
+		&model.Task{},
+		&model.Label{},
+		&model.Comment{},
+		&model.Activity{},
+	); err != nil {
+		log.Fatalf("database migration error: %v", err)
+	}
+
+	tokenTTl, _ := time.ParseDuration(cfg.JWTAccessTokenExpiry)
+	userRepo := repository.NewUserRepository(db)
+	authSvc := service.NewAuthService(userRepo, cfg.JWTSecret, tokenTTl)
+	authHandler := handler.NewAuthHandler(authSvc)
+
+	r := router.New(authHandler)
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.ServerPort,
-		Handler: nil,
+		Handler: r,
 	}
 
 	go func() {

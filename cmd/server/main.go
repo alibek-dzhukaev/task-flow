@@ -51,7 +51,7 @@ func main() {
 	authSvc := service.NewAuthService(userRepo, cfg.JWTSecret, tokenTTl)
 	authHandler := handler.NewAuthHandler(authSvc)
 
-	r := router.New(authHandler)
+	r := router.New(authHandler, cfg.JWTSecret)
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.ServerPort,

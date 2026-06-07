@@ -4,12 +4,13 @@ import (
 	"net/http"
 
 	"github.com/alibek-dzhukaev/task-flow/internal/handler"
+	custommiddleware "github.com/alibek-dzhukaev/task-flow/internal/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 )
 
-func New(authHandler *handler.AuthHandler) *chi.Mux {
+func New(authHandler *handler.AuthHandler, jwtSecret string) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
@@ -29,6 +30,10 @@ func New(authHandler *handler.AuthHandler) *chi.Mux {
 		r.Route("/auth", func(r chi.Router) {
 			r.Post("/register", authHandler.Register)
 			r.Post("/login", authHandler.Login)
+		})
+
+		r.Group(func(r chi.Router) {
+			r.Use(custommiddleware.Auth(jwtSecret))
 		})
 	})
 	return r
